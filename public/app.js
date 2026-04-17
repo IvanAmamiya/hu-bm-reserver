@@ -1,5 +1,3 @@
-const { DateTime } = luxon;
-
 const venueSelect = document.getElementById("venueSelect");
 const organizationInput = document.getElementById("organizationInput");
 const applicantInput = document.getElementById("applicantInput");
@@ -10,25 +8,13 @@ const exportBtn = document.getElementById("exportBtn");
 const statusEl = document.getElementById("status");
 const slotsEl = document.getElementById("slots");
 
-const TIMEZONE = window.APP_CONFIG?.TIMEZONE || "Asia/Tokyo";
-const START_HOUR = Number(window.APP_CONFIG?.START_HOUR ?? 9);
-const END_HOUR = Number(window.APP_CONFIG?.END_HOUR ?? 21);
-const CORS_PROXY = String(window.APP_CONFIG?.CORS_PROXY || "").trim();
-const CORS_PROXIES = Array.isArray(window.APP_CONFIG?.CORS_PROXIES)
-  ? window.APP_CONFIG.CORS_PROXIES.map((item) => String(item || "").trim()).filter(Boolean)
-  : [];
-const TEMPLATE_PATH = String(window.APP_CONFIG?.TEMPLATE_PATH || "./template.xlsx").trim();
-const VENUES = Array.isArray(window.APP_CONFIG?.VENUES) ? window.APP_CONFIG.VENUES : [];
-const PROXY_CANDIDATES = [
-  ...CORS_PROXIES,
-  CORS_PROXY,
-  "https://api.allorigins.win/raw?url={url}",
-  "https://cors.isomorphic-git.org/{url}",
-  "https://corsproxy.io/?url={url}",
-].filter(Boolean).filter((value, index, arr) => arr.indexOf(value) === index);
+const API_BASE_URL = String(window.APP_CONFIG?.API_BASE_URL || "").trim().replace(/\/$/, "");
+
+function apiUrl(path) {
+  return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
+}
 
 let currentVenue = null;
-let lastAvailabilityData = [];
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -45,259 +31,51 @@ function selectedVenueName() {
   return option ? option.text : "";
 }
 
-function embedToIcalUrl(embedUrl) {
-  const parsed = new URL(embedUrl);
-  const src = parsed.searchParams.get("src");
-  if (!src) {
-    throw new Error(`无效日历地址（缺少 src）：${embedUrl}`);
-  }
-
-  return `https://calendar.google.com/calendar/ical/${encodeURIComponent(src)}/public/basic.ics`;
-}
-
-function proxiedUrl(url, proxyPattern) {
-  if (!proxyPattern) {
-    return url;
-  }
-
-  if (proxyPattern.includes("{url}")) {
-    if (proxyPattern.includes("url={url}")) {
-      return proxyPattern.replace("{url}", encodeURIComponent(url));
-    }
-    return proxyPattern.replace("{url}", url);
-  }
-
-  return `${proxyPattern}${encodeURIComponent(url)}`;
-}
-
-async function fetchCalendarText(icalUrl) {
-  const tried = [];
-
-  for (const proxy of PROXY_CANDIDATES) {
-    const targetUrl = proxiedUrl(icalUrl, proxy);
-    tried.push(proxy);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-    try {
-      const response = await fetch(targetUrl, { signal: controller.signal });
-      if (!response.ok) {
-        continue;
-      }
-      return response.text();
-    } catch (error) {
-      // Try next proxy endpoint.
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-
-  const used = tried.length > 0 ? tried.join(" | ") : "(none)";
-  throw new Error(`日历拉取失败（可能是跨域/CORS限制）。已尝试代理：${used}`);
-}
-
 function readableErrorMessage(error, fallback) {
   const raw = String(error?.message || "");
   if (/Failed to fetch/i.test(raw) || /NetworkError/i.test(raw)) {
-    return `${fallback}：网络或跨域访问失败。请稍后重试，或修改 config.js 中的 CORS_PROXY/CORS_PROXIES。`;
+    return `${fallback}：后端服务不可达。请确认 API 正在运行，并检查 config.js 的 API_BASE_URL。`;
   }
   return `${fallback}：${raw || "未知错误"}`;
 }
 
-function parseIcsEvents(icsText) {
-  const jcal = ICAL.parse(icsText);
-  const component = new ICAL.Component(jcal);
-  const vevents = component.getAllSubcomponents("vevent") || [];
-  return vevents.map((item) => new ICAL.Event(item));
-}
+async function loadVenues() {
+  setStatus("正在加载体育馆列表...");
+  loadBtn.disabled = true;
+  exportBtn.disabled = true;
+  venueSelect.innerHTML = "";
 
-function mergeIntervals(intervals) {
-  if (intervals.length === 0) {
-    return [];
-  }
+  try {
+    const response = await fetch(apiUrl("/api/venues"));
+    if (!response.ok) {
+      throw new Error("加载体育馆失败");
+    }
 
-  const sorted = [...intervals].sort((a, b) => a.start.toMillis() - b.start.toMillis());
-  const merged = [sorted[0]];
+    const data = await response.json();
+    const venues = Array.isArray(data.venues) ? data.venues : [];
+    if (venues.length === 0) {
+      throw new Error("未配置体育馆");
+    }
 
-  for (let i = 1; i < sorted.length; i += 1) {
-    const current = sorted[i];
-    const last = merged[merged.length - 1];
-
-    if (current.start <= last.end) {
-      if (current.end > last.end) {
-        last.end = current.end;
+    venues.forEach((venue, index) => {
+      const option = document.createElement("option");
+      option.value = venue.id;
+      option.textContent = venue.name;
+      if (index === 0) {
+        option.selected = true;
       }
-    } else {
-      merged.push({ ...current });
-    }
-  }
-
-  return merged;
-}
-
-function invertIntervals(busyIntervals, dayStart, dayEnd) {
-  if (busyIntervals.length === 0) {
-    return [{ start: dayStart, end: dayEnd }];
-  }
-
-  const free = [];
-  let cursor = dayStart;
-
-  for (const busy of busyIntervals) {
-    if (busy.start > cursor) {
-      free.push({ start: cursor, end: busy.start });
-    }
-    if (busy.end > cursor) {
-      cursor = busy.end;
-    }
-  }
-
-  if (cursor < dayEnd) {
-    free.push({ start: cursor, end: dayEnd });
-  }
-
-  return free;
-}
-
-function intersectTwoIntervalLists(listA, listB) {
-  const result = [];
-  let i = 0;
-  let j = 0;
-
-  while (i < listA.length && j < listB.length) {
-    const start = listA[i].start > listB[j].start ? listA[i].start : listB[j].start;
-    const end = listA[i].end < listB[j].end ? listA[i].end : listB[j].end;
-
-    if (end > start) {
-      result.push({ start, end });
-    }
-
-    if (listA[i].end < listB[j].end) {
-      i += 1;
-    } else {
-      j += 1;
-    }
-  }
-
-  return result;
-}
-
-function formatIntervals(intervals) {
-  return intervals.map((interval) => ({
-    start: interval.start.toFormat("HH:mm"),
-    end: interval.end.toFormat("HH:mm"),
-  }));
-}
-
-function clipInterval(start, end, dayStart, dayEnd) {
-  if (end <= dayStart || start >= dayEnd) {
-    return null;
-  }
-
-  const clippedStart = start < dayStart ? dayStart : start;
-  const clippedEnd = end > dayEnd ? dayEnd : end;
-
-  if (clippedEnd <= clippedStart) {
-    return null;
-  }
-
-  return { start: clippedStart, end: clippedEnd };
-}
-
-function eventDurationMillis(event) {
-  if (event.endDate && event.startDate) {
-    return Math.max(0, event.endDate.toJSDate().getTime() - event.startDate.toJSDate().getTime());
-  }
-  return 0;
-}
-
-function recurringIntervalsForDay(event, dayStart, dayEnd) {
-  const intervals = [];
-  const durationMillis = eventDurationMillis(event);
-  if (durationMillis <= 0) {
-    return intervals;
-  }
-
-  const iterator = event.iterator();
-  let count = 0;
-  while (count < 2000) {
-    const occurrence = iterator.next();
-    if (!occurrence) {
-      break;
-    }
-    count += 1;
-
-    const occurrenceStart = DateTime.fromJSDate(occurrence.toJSDate(), { zone: TIMEZONE });
-    if (occurrenceStart >= dayEnd) {
-      break;
-    }
-
-    const occurrenceEnd = occurrenceStart.plus({ milliseconds: durationMillis });
-    const interval = clipInterval(occurrenceStart, occurrenceEnd, dayStart, dayEnd);
-    if (interval) {
-      intervals.push(interval);
-    }
-  }
-
-  return intervals;
-}
-
-function eventIntervalsForDay(event, dayStart, dayEnd) {
-  const status = String(event?.component?.getFirstPropertyValue("status") || "").toUpperCase();
-  if (status === "CANCELLED") {
-    return [];
-  }
-
-  if (event.isRecurring()) {
-    return recurringIntervalsForDay(event, dayStart, dayEnd);
-  }
-
-  const start = DateTime.fromJSDate(event.startDate.toJSDate(), { zone: TIMEZONE });
-  const end = DateTime.fromJSDate(event.endDate.toJSDate(), { zone: TIMEZONE });
-  const interval = clipInterval(start, end, dayStart, dayEnd);
-  return interval ? [interval] : [];
-}
-
-async function calculateAvailability(venue, baseDateISO, days) {
-  const baseDate = DateTime.fromISO(baseDateISO, { zone: TIMEZONE });
-  if (!baseDate.isValid) {
-    throw new Error("日期格式错误，请使用 YYYY-MM-DD");
-  }
-
-  const icsTexts = await Promise.all(venue.embedUrls.map((url) => fetchCalendarText(embedToIcalUrl(url))));
-  const calendarsEvents = icsTexts.map((text) => parseIcsEvents(text));
-
-  const result = [];
-
-  for (let dayOffset = 0; dayOffset < days; dayOffset += 1) {
-    const currentDay = baseDate.plus({ days: dayOffset });
-    const dayStart = currentDay.set({ hour: START_HOUR, minute: 0, second: 0, millisecond: 0 });
-    const dayEnd = currentDay.set({ hour: END_HOUR, minute: 0, second: 0, millisecond: 0 });
-
-    const freeByCalendar = calendarsEvents.map((events) => {
-      const busyIntervals = events.flatMap((event) => eventIntervalsForDay(event, dayStart, dayEnd));
-      const mergedBusy = mergeIntervals(busyIntervals);
-      return invertIntervals(mergedBusy, dayStart, dayEnd);
+      venueSelect.appendChild(option);
     });
 
-    let commonFree = freeByCalendar[0] || [];
-    for (let i = 1; i < freeByCalendar.length; i += 1) {
-      commonFree = intersectTwoIntervalLists(commonFree, freeByCalendar[i]);
-    }
-
-    result.push({
-      date: currentDay.toISODate(),
-      timezone: TIMEZONE,
-      window: {
-        start: `${String(START_HOUR).padStart(2, "0")}:00`,
-        end: `${String(END_HOUR).padStart(2, "0")}:00`,
-      },
-      commonFree: formatIntervals(commonFree),
-    });
+    currentVenue = {
+      id: venueSelect.value,
+      name: selectedVenueName(),
+    };
+    loadBtn.disabled = false;
+    setStatus("请选择日期并查询空余时间");
+  } catch (error) {
+    setStatus(readableErrorMessage(error, "体育馆加载失败"));
   }
-
-  return result;
 }
 
 function renderSlots(days) {
@@ -354,25 +132,6 @@ function renderSlots(days) {
   exportBtn.disabled = selectableCount === 0;
 }
 
-function loadVenues() {
-  venueSelect.innerHTML = "";
-  if (VENUES.length === 0) {
-    throw new Error("未配置场馆，请在 config.js 中设置 APP_CONFIG.VENUES");
-  }
-
-  VENUES.forEach((venue, index) => {
-    const option = document.createElement("option");
-    option.value = venue.id;
-    option.textContent = venue.name;
-    if (index === 0) {
-      option.selected = true;
-    }
-    venueSelect.appendChild(option);
-  });
-
-  currentVenue = VENUES.find((item) => item.id === venueSelect.value) || null;
-}
-
 async function loadAvailability() {
   const venueId = venueSelect.value;
   const date = dateInput.value;
@@ -387,21 +146,25 @@ async function loadAvailability() {
     return;
   }
 
-  const venue = VENUES.find((item) => item.id === venueId);
-  if (!venue) {
-    setStatus("场馆配置不存在");
-    return;
-  }
-
-  currentVenue = venue;
-  setStatus(`正在查询 ${venue.name} 空余时间...`);
+  const venueName = selectedVenueName();
+  currentVenue = { id: venueId, name: venueName };
+  setStatus(`正在查询 ${venueName} 空余时间...`);
   loadBtn.disabled = true;
   exportBtn.disabled = true;
 
   try {
-    lastAvailabilityData = await calculateAvailability(venue, date, days);
+    const response = await fetch(
+      apiUrl(`/api/availability?venueId=${encodeURIComponent(venueId)}&date=${encodeURIComponent(date)}&days=${days}`)
+    );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "查询失败");
+    }
+
+    const data = await response.json();
+    lastAvailabilityData = Array.isArray(data.data) ? data.data : [];
     renderSlots(lastAvailabilityData);
-    setStatus(`查询完成：${venue.name}，共 ${lastAvailabilityData.length} 天，勾选后可导出`);
+    setStatus(`查询完成：${data.venue?.name || venueName}，共 ${lastAvailabilityData.length} 天，勾选后可导出`);
   } catch (error) {
     slotsEl.innerHTML = "";
     setStatus(readableErrorMessage(error, "查询失败"));
@@ -579,27 +342,44 @@ async function exportXlsx() {
   setStatus("正在生成 xlsx...");
 
   try {
-    const templateResponse = await fetch(TEMPLATE_PATH);
-    if (!templateResponse.ok) {
-      throw new Error("读取模板文件失败，请确认 template.xlsx 已部署");
+    const response = await fetch(apiUrl("/api/export-xlsx"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        selected,
+        venueId: currentVenue?.id,
+        venueName,
+        organizationName,
+        applicantName,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "导出失败");
     }
 
-    const arrayBuffer = await templateResponse.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: "array", cellStyles: true });
-    fillTemplateSheet2(workbook, selected, venueName, organizationName, applicantName);
-
-    const fileName = xlsxFileName(organizationName, venueName);
-    const output = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([output], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = URL.createObjectURL(blob);
-
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
+
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const utf8NameMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    const plainNameMatch = disposition.match(/filename="?([^";]+)"?/i);
+    const fileName = utf8NameMatch
+      ? decodeURIComponent(utf8NameMatch[1])
+      : plainNameMatch
+        ? plainNameMatch[1]
+        : "団体名_施設名_予定表.xlsx";
+
     anchor.download = fileName;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url);
 
     setStatus(`导出成功：${fileName}`);
   } catch (error) {
@@ -612,12 +392,10 @@ async function exportXlsx() {
 loadBtn.addEventListener("click", loadAvailability);
 exportBtn.addEventListener("click", exportXlsx);
 venueSelect.addEventListener("change", () => {
-  currentVenue = VENUES.find((item) => item.id === venueSelect.value) || null;
+  currentVenue = {
+    id: venueSelect.value,
+    name: selectedVenueName(),
+  };
 });
 
-try {
-  loadVenues();
-  setStatus("请选择日期并查询空余时间");
-} catch (error) {
-  setStatus(`初始化失败：${error.message}`);
-}
+loadVenues();

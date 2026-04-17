@@ -1,12 +1,11 @@
 window.APP_CONFIG = {
+  API_BASE_URL: "",
   TIMEZONE: "Asia/Tokyo",
   START_HOUR: 9,
   END_HOUR: 21,
-  CORS_PROXY: "https://api.allorigins.win/raw?url={url}",
+  CORS_PROXY: "",
   CORS_PROXIES: [
-    "https://api.allorigins.win/raw?url={url}",
-    "https://cors.isomorphic-git.org/{url}",
-    "https://corsproxy.io/?url={url}"
+    ""
   ],
   TEMPLATE_PATH: "./template.xlsx",
   VENUES: [
