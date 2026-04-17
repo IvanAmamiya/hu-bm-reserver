@@ -134,6 +134,10 @@ export default function HomePage() {
       }
 
       const blob = await response.blob();
+      if (!blob || blob.size === 0) {
+        throw new Error("导出文件为空，请重试");
+      }
+
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -151,7 +155,11 @@ export default function HomePage() {
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      window.URL.revokeObjectURL(url);
+
+      // Delay revoke to avoid canceled downloads on some browsers.
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1500);
 
       setStatus(`导出成功：${fileName}`);
     } catch (error) {
