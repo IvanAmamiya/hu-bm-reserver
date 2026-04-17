@@ -76,6 +76,15 @@ This repo includes workflow: `.github/workflows/deploy-pages.yml`.
 2. In GitHub Settings -> Pages, choose Source = GitHub Actions.
 3. Workflow deploys `docs/` automatically.
 
+### Troubleshooting: only README is shown
+
+If your deployed site shows README text instead of the app:
+
+1. Confirm you are opening the GitHub Pages URL, not the repository homepage.
+2. In repository Settings -> Pages, set Source to GitHub Actions.
+3. Check Actions tab and ensure the workflow `Deploy GitHub Pages` succeeded.
+4. This repo also includes a root `index.html` redirect to `docs/` as a fallback.
+
 ## Limitations
 
 - Frontend-only mode cannot save files to server disk; files are browser-downloaded only.
