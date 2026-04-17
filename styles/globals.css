@@ -130,6 +130,32 @@ button:disabled {
   color: #6b615b;
 }
 
+.download-fallback {
+  margin: -4px 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f7efe7;
+  border: 1px solid #e7d6c7;
+}
+
+.download-fallback a {
+  color: #8b431c;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.download-fallback a:hover {
+  text-decoration: underline;
+}
+
+.download-fallback span {
+  color: #7c7169;
+  font-size: 0.86rem;
+}
+
 .slots {
   display: grid;
   gap: 12px;

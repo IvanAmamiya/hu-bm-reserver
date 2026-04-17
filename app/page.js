@@ -18,6 +18,7 @@ export default function HomePage() {
   const [status, setStatus] = useState("正在加载体育馆列表...");
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [downloadInfo, setDownloadInfo] = useState(null);
 
   const selectedVenue = useMemo(() => venues.find((v) => v.id === venueId) || null, [venues, venueId]);
 
@@ -43,6 +44,14 @@ export default function HomePage() {
 
     loadVenues();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (downloadInfo?.url) {
+        window.URL.revokeObjectURL(downloadInfo.url);
+      }
+    };
+  }, [downloadInfo]);
 
   function toggleSlot(value) {
     setCheckedMap((prev) => ({
@@ -138,6 +147,10 @@ export default function HomePage() {
         throw new Error("导出文件为空，请重试");
       }
 
+      if (downloadInfo?.url) {
+        window.URL.revokeObjectURL(downloadInfo.url);
+      }
+
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -156,12 +169,13 @@ export default function HomePage() {
       anchor.click();
       anchor.remove();
 
-      // Delay revoke to avoid canceled downloads on some browsers.
-      window.setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 1500);
+      setDownloadInfo({
+        url,
+        fileName,
+        size: blob.size,
+      });
 
-      setStatus(`导出成功：${fileName}`);
+      setStatus(`导出成功：${fileName}。若未自动下载，请点击下方“手动下载文件”。`);
     } catch (error) {
       setStatus(`导出失败：${error.message}`);
     } finally {
@@ -230,6 +244,12 @@ export default function HomePage() {
           </button>
         </div>
         <div className="status">{status}</div>
+        {downloadInfo ? (
+          <div className="download-fallback">
+            <a href={downloadInfo.url} download={downloadInfo.fileName}>手动下载文件</a>
+            <span>{Math.max(1, Math.round(downloadInfo.size / 1024))} KB</span>
+          </div>
+        ) : null}
         <div className="slots">
           {slotsByDay.map((day, dayIndex) => (
             <article key={`${day.date}-${dayIndex}`} className="day-card">
