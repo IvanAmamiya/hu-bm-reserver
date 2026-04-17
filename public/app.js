@@ -9,6 +9,7 @@ const statusEl = document.getElementById("status");
 const slotsEl = document.getElementById("slots");
 
 const API_BASE_URL = String(window.APP_CONFIG?.API_BASE_URL || "").trim().replace(/\/$/, "");
+const LOCAL_VENUES = Array.isArray(window.APP_CONFIG?.VENUES) ? window.APP_CONFIG.VENUES : [];
 
 function apiUrl(path) {
   return API_BASE_URL ? `${API_BASE_URL}${path}` : path;
@@ -29,6 +30,24 @@ function setStatus(text) {
 function selectedVenueName() {
   const option = venueSelect.options[venueSelect.selectedIndex];
   return option ? option.text : "";
+}
+
+function renderVenueOptions(venues) {
+  venueSelect.innerHTML = "";
+  venues.forEach((venue, index) => {
+    const option = document.createElement("option");
+    option.value = venue.id;
+    option.textContent = venue.name;
+    if (index === 0) {
+      option.selected = true;
+    }
+    venueSelect.appendChild(option);
+  });
+
+  currentVenue = {
+    id: venueSelect.value,
+    name: selectedVenueName(),
+  };
 }
 
 function readableErrorMessage(error, fallback) {
@@ -57,23 +76,16 @@ async function loadVenues() {
       throw new Error("未配置体育馆");
     }
 
-    venues.forEach((venue, index) => {
-      const option = document.createElement("option");
-      option.value = venue.id;
-      option.textContent = venue.name;
-      if (index === 0) {
-        option.selected = true;
-      }
-      venueSelect.appendChild(option);
-    });
-
-    currentVenue = {
-      id: venueSelect.value,
-      name: selectedVenueName(),
-    };
+    renderVenueOptions(venues);
     loadBtn.disabled = false;
     setStatus("请选择日期并查询空余时间");
   } catch (error) {
+    if (LOCAL_VENUES.length > 0) {
+      renderVenueOptions(LOCAL_VENUES);
+      loadBtn.disabled = false;
+      setStatus("后端不可达，已使用本地体育馆配置");
+      return;
+    }
     setStatus(readableErrorMessage(error, "体育馆加载失败"));
   }
 }
