@@ -94,13 +94,8 @@ export default function HomePage() {
   }
 
   async function handleExport() {
-    if (!organizationName.trim()) {
-      setStatus("请先填写团体名（或个人名）");
-      return;
-    }
-
-    if (!applicantName.trim()) {
-      setStatus("请先填写申请者姓名");
+    if (!organizationName.trim() && !applicantName.trim()) {
+      alert("请至少填写团体名或申请者名");
       return;
     }
 
