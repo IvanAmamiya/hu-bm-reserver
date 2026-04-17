@@ -16,6 +16,11 @@ const END_HOUR = Number(window.APP_CONFIG?.END_HOUR ?? 21);
 const CORS_PROXY = String(window.APP_CONFIG?.CORS_PROXY || "").trim();
 const TEMPLATE_PATH = String(window.APP_CONFIG?.TEMPLATE_PATH || "./template.xlsx").trim();
 const VENUES = Array.isArray(window.APP_CONFIG?.VENUES) ? window.APP_CONFIG.VENUES : [];
+const PROXY_CANDIDATES = [
+  CORS_PROXY,
+  "https://api.allorigins.win/raw?url={url}",
+  "https://cors.isomorphic-git.org/{url}",
+].filter(Boolean);
 
 let currentVenue = null;
 let lastAvailabilityData = [];
@@ -45,20 +50,49 @@ function embedToIcalUrl(embedUrl) {
   return `https://calendar.google.com/calendar/ical/${encodeURIComponent(src)}/public/basic.ics`;
 }
 
-function proxiedUrl(url) {
-  if (!CORS_PROXY) {
+function proxiedUrl(url, proxyPattern) {
+  if (!proxyPattern) {
     return url;
   }
-  return CORS_PROXY.includes("{url}") ? CORS_PROXY.replace("{url}", encodeURIComponent(url)) : `${CORS_PROXY}${encodeURIComponent(url)}`;
+
+  if (proxyPattern.includes("{url}")) {
+    if (proxyPattern.includes("url={url}")) {
+      return proxyPattern.replace("{url}", encodeURIComponent(url));
+    }
+    return proxyPattern.replace("{url}", url);
+  }
+
+  return `${proxyPattern}${encodeURIComponent(url)}`;
 }
 
 async function fetchCalendarText(icalUrl) {
-  const response = await fetch(proxiedUrl(icalUrl));
-  if (!response.ok) {
-    throw new Error(`获取日历失败：${response.status}`);
+  const tried = [];
+
+  for (const proxy of PROXY_CANDIDATES) {
+    const targetUrl = proxiedUrl(icalUrl, proxy);
+    tried.push(proxy);
+
+    try {
+      const response = await fetch(targetUrl);
+      if (!response.ok) {
+        continue;
+      }
+      return response.text();
+    } catch (error) {
+      // Try next proxy endpoint.
+    }
   }
 
-  return response.text();
+  const primary = tried[0] || "(none)";
+  throw new Error(`日历拉取失败（可能是跨域/CORS限制）。已尝试代理：${primary}`);
+}
+
+function readableErrorMessage(error, fallback) {
+  const raw = String(error?.message || "");
+  if (/Failed to fetch/i.test(raw) || /NetworkError/i.test(raw)) {
+    return `${fallback}：网络或跨域访问失败。请稍后重试，或更换 docs/config.js 中的 CORS_PROXY。`;
+  }
+  return `${fallback}：${raw || "未知错误"}`;
 }
 
 function parseIcsEvents(icsText) {
@@ -360,7 +394,7 @@ async function loadAvailability() {
     setStatus(`查询完成：${venue.name}，共 ${lastAvailabilityData.length} 天，勾选后可导出`);
   } catch (error) {
     slotsEl.innerHTML = "";
-    setStatus(`查询失败：${error.message}`);
+    setStatus(readableErrorMessage(error, "查询失败"));
   } finally {
     loadBtn.disabled = false;
   }
@@ -559,7 +593,7 @@ async function exportXlsx() {
 
     setStatus(`导出成功：${fileName}`);
   } catch (error) {
-    setStatus(`导出失败：${error.message}`);
+    setStatus(readableErrorMessage(error, "导出失败"));
   } finally {
     exportBtn.disabled = false;
   }

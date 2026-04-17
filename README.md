@@ -101,3 +101,5 @@ If your deployed site shows README text instead of the app:
 
 - Frontend-only mode cannot save files to server disk; files are browser-downloaded only.
 - CORS proxy availability/rate limits may affect calendar fetch stability.
+
+If you see `查询失败：Failed to fetch`, it is usually a CORS/proxy issue. Update `docs/config.js` -> `CORS_PROXY` and retry.
