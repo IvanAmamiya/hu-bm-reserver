@@ -14,13 +14,18 @@ const TIMEZONE = window.APP_CONFIG?.TIMEZONE || "Asia/Tokyo";
 const START_HOUR = Number(window.APP_CONFIG?.START_HOUR ?? 9);
 const END_HOUR = Number(window.APP_CONFIG?.END_HOUR ?? 21);
 const CORS_PROXY = String(window.APP_CONFIG?.CORS_PROXY || "").trim();
+const CORS_PROXIES = Array.isArray(window.APP_CONFIG?.CORS_PROXIES)
+  ? window.APP_CONFIG.CORS_PROXIES.map((item) => String(item || "").trim()).filter(Boolean)
+  : [];
 const TEMPLATE_PATH = String(window.APP_CONFIG?.TEMPLATE_PATH || "./template.xlsx").trim();
 const VENUES = Array.isArray(window.APP_CONFIG?.VENUES) ? window.APP_CONFIG.VENUES : [];
 const PROXY_CANDIDATES = [
+  ...CORS_PROXIES,
   CORS_PROXY,
   "https://api.allorigins.win/raw?url={url}",
   "https://cors.isomorphic-git.org/{url}",
-].filter(Boolean);
+  "https://corsproxy.io/?url={url}",
+].filter(Boolean).filter((value, index, arr) => arr.indexOf(value) === index);
 
 let currentVenue = null;
 let lastAvailabilityData = [];
@@ -72,25 +77,30 @@ async function fetchCalendarText(icalUrl) {
     const targetUrl = proxiedUrl(icalUrl, proxy);
     tried.push(proxy);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
     try {
-      const response = await fetch(targetUrl);
+      const response = await fetch(targetUrl, { signal: controller.signal });
       if (!response.ok) {
         continue;
       }
       return response.text();
     } catch (error) {
       // Try next proxy endpoint.
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
-  const primary = tried[0] || "(none)";
-  throw new Error(`日历拉取失败（可能是跨域/CORS限制）。已尝试代理：${primary}`);
+  const used = tried.length > 0 ? tried.join(" | ") : "(none)";
+  throw new Error(`日历拉取失败（可能是跨域/CORS限制）。已尝试代理：${used}`);
 }
 
 function readableErrorMessage(error, fallback) {
   const raw = String(error?.message || "");
   if (/Failed to fetch/i.test(raw) || /NetworkError/i.test(raw)) {
-    return `${fallback}：网络或跨域访问失败。请稍后重试，或更换 docs/config.js 中的 CORS_PROXY。`;
+    return `${fallback}：网络或跨域访问失败。请稍后重试，或修改 config.js 中的 CORS_PROXY/CORS_PROXIES。`;
   }
   return `${fallback}：${raw || "未知错误"}`;
 }
