@@ -18,7 +18,6 @@ export default function HomePage() {
   const [status, setStatus] = useState("正在加载体育馆列表...");
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [downloadInfo, setDownloadInfo] = useState(null);
 
   const selectedVenue = useMemo(() => venues.find((v) => v.id === venueId) || null, [venues, venueId]);
 
@@ -44,14 +43,6 @@ export default function HomePage() {
 
     loadVenues();
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (downloadInfo?.url) {
-        window.URL.revokeObjectURL(downloadInfo.url);
-      }
-    };
-  }, [downloadInfo]);
 
   function toggleSlot(value) {
     setCheckedMap((prev) => ({
@@ -123,59 +114,32 @@ export default function HomePage() {
     setStatus("正在导出 xlsx...");
 
     try {
-      const response = await fetch("/api/export-xlsx", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          selected,
-          venueId,
-          venueName: selectedVenue?.name || "Unknown Venue",
-          organizationName: organizationName.trim(),
-          applicantName: applicantName.trim(),
-        }),
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/api/export-xlsx";
+      form.style.display = "none";
+
+      const fields = {
+        selected: JSON.stringify(selected),
+        venueId,
+        venueName: selectedVenue?.name || "Unknown Venue",
+        organizationName: organizationName.trim(),
+        applicantName: applicantName.trim(),
+      };
+
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "导出失败");
-      }
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
 
-      const blob = await response.blob();
-      if (!blob || blob.size === 0) {
-        throw new Error("导出文件为空，请重试");
-      }
-
-      if (downloadInfo?.url) {
-        window.URL.revokeObjectURL(downloadInfo.url);
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-
-      const disposition = response.headers.get("Content-Disposition") || "";
-      const utf8NameMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
-      const plainNameMatch = disposition.match(/filename="?([^";]+)"?/i);
-      const fileName = utf8NameMatch
-        ? decodeURIComponent(utf8NameMatch[1])
-        : plainNameMatch
-          ? plainNameMatch[1]
-          : "団体名_施設名_予定表.xlsx";
-
-      anchor.download = fileName;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-
-      setDownloadInfo({
-        url,
-        fileName,
-        size: blob.size,
-      });
-
-      setStatus(`导出成功：${fileName}。若未自动下载，请点击下方“手动下载文件”。`);
+      setStatus("已提交导出请求，请查看浏览器下载列表。");
     } catch (error) {
       setStatus(`导出失败：${error.message}`);
     } finally {
@@ -244,12 +208,6 @@ export default function HomePage() {
           </button>
         </div>
         <div className="status">{status}</div>
-        {downloadInfo ? (
-          <div className="download-fallback">
-            <a href={downloadInfo.url} download={downloadInfo.fileName}>手动下载文件</a>
-            <span>{Math.max(1, Math.round(downloadInfo.size / 1024))} KB</span>
-          </div>
-        ) : null}
         <div className="slots">
           {slotsByDay.map((day, dayIndex) => (
             <article key={`${day.date}-${dayIndex}`} className="day-card">

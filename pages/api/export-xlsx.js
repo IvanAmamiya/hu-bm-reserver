@@ -6,7 +6,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const selected = Array.isArray(req.body?.selected) ? req.body.selected : [];
+    const rawSelected = req.body?.selected;
+    let selected = Array.isArray(rawSelected) ? rawSelected : [];
+    if (!Array.isArray(rawSelected) && typeof rawSelected === "string") {
+      try {
+        const parsed = JSON.parse(rawSelected);
+        if (Array.isArray(parsed)) {
+          selected = parsed;
+        }
+      } catch {
+        selected = [];
+      }
+    }
+
     const venueName = String(req.body?.venueName || "").trim() || "Unknown Venue";
     const organizationName = String(req.body?.organizationName || "").trim() || ORGANIZATION_NAME;
     const applicantName = String(req.body?.applicantName || "").trim() || "";
