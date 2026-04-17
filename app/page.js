@@ -166,8 +166,10 @@ export default function HomePage() {
   return (
     <main className="container">
       <header className="hero">
-        <h1>空余时间整理</h1>
-        <p>先选体育馆，再查看可选时段，最后导出到 XLSX。</p>
+        <div className="hero-copy">
+          <h1>空余时间整理</h1>
+          <p>先选体育馆，再查看可选时段，最后导出到 XLSX。</p>
+        </div>
         <p className="hero-slogan">大家都能自由地约球，不必囿于人际关系</p>
       </header>
 
