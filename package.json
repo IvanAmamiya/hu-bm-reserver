@@ -1,17 +1,20 @@
 {
   "name": "hu-bm-reserver",
   "version": "1.0.0",
-  "description": "API to aggregate common free time from multiple Google Calendars (9:00-21:00 Asia/Tokyo)",
-  "main": "src/server.js",
+  "description": "Next.js app for gym availability and xlsx export",
+  "main": "next.config.js",
   "scripts": {
-    "start": "node src/server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "axios": "^1.9.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.2",
     "luxon": "^3.5.0",
+    "next": "^14.2.5",
     "node-ical": "^0.26.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "xlsx": "^0.18.5"
   }
 }

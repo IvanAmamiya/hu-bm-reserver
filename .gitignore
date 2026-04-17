@@ -8,10 +8,12 @@ node_modules/
 
 # Runtime outputs
 exports/
+.next/
 
 # Local test/export artifacts
 test-export*.xlsx
 download-test*.xlsx
+next-export-test.xlsx
 
 # Logs
 npm-debug.log*

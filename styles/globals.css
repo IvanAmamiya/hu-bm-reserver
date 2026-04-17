@@ -1,0 +1,143 @@
+:root {
+  --bg: #f4f1ea;
+  --card: #fffdf8;
+  --text: #212121;
+  --accent: #b35c2e;
+  --accent-soft: #f0d8c9;
+  --line: #e4d6cc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top left, #fff8ef 0%, var(--bg) 50%, #ece6dc 100%);
+  min-height: 100vh;
+}
+
+.container {
+  width: min(1000px, 92vw);
+  margin: 32px auto 48px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  letter-spacing: 0.02em;
+}
+
+.hero p {
+  margin: 8px 0 0;
+  color: #5a514c;
+}
+
+.panel {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 8px 24px rgba(80, 48, 21, 0.08);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+input,
+select,
+button {
+  border-radius: 10px;
+  border: 1px solid #d9c9bc;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+}
+
+button {
+  cursor: pointer;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.status {
+  margin: 10px 0 14px;
+  min-height: 22px;
+  color: #6b615b;
+}
+
+.slots {
+  display: grid;
+  gap: 12px;
+}
+
+.day-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: linear-gradient(120deg, #fffdfa 0%, #fff7f0 100%);
+}
+
+.day-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.slot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #dcc7b7;
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.empty {
+  color: #7a6e67;
+}
+
+@media (max-width: 700px) {
+  .panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
