@@ -55,13 +55,13 @@ body {
 
 .hero-slogan {
   margin-top: 0;
-  padding: 5px 6px;
-  border-left: 2px solid var(--accent);
-  border-radius: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
   font-size: 0.76rem;
   font-weight: 400;
   color: #8f8c87;
-  background: rgba(255, 255, 255, 0.65);
+  background: transparent;
   white-space: nowrap;
   align-self: flex-start;
 }
