@@ -162,6 +162,7 @@ export default function HomePage() {
   }
 
   const selectableCount = slotsByDay.reduce((sum, day) => sum + (day.commonFree?.length || 0), 0);
+  const selectedCount = Object.values(checkedMap).filter(Boolean).length;
 
   return (
     <main className="container">
@@ -216,8 +217,8 @@ export default function HomePage() {
       <section className="panel">
         <div className="panel-head">
           <h2>可选时段</h2>
-          <button type="button" disabled={exporting || loading || selectableCount === 0} onClick={handleExport}>
-            导出到 XLSX
+          <button type="button" disabled={exporting || loading || selectedCount === 0} onClick={handleExport}>
+            导出到 XLSX{selectedCount > 0 ? `（已选 ${selectedCount}）` : ""}
           </button>
         </div>
         <div className="status">{status}</div>
