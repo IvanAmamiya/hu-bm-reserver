@@ -171,7 +171,7 @@ export default function HomePage() {
           <h1>空余时间整理</h1>
           <p>先选体育馆，再查看可选时段，最后导出到 XLSX。</p>
         </div>
-        <p className="hero">大家都能安安静静地打球，不用涉足人际关系</p>
+        <p className="hero-slogan">大家都能安安静静地打球，不用涉足人际关系</p>
       </header>
 
       <section className="panel">
