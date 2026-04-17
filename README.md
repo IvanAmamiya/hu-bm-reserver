@@ -76,6 +76,18 @@ This repo includes workflow: `.github/workflows/deploy-pages.yml`.
 2. In GitHub Settings -> Pages, choose Source = GitHub Actions.
 3. Workflow deploys `docs/` automatically.
 
+Quick commands:
+
+```bash
+git add .
+git commit -m "refactor: github pages ready"
+git push origin main
+```
+
+Open site URL pattern:
+
+`https://<your-github-username>.github.io/<your-repo-name>/`
+
 ### Troubleshooting: only README is shown
 
 If your deployed site shows README text instead of the app:
@@ -83,7 +95,7 @@ If your deployed site shows README text instead of the app:
 1. Confirm you are opening the GitHub Pages URL, not the repository homepage.
 2. In repository Settings -> Pages, set Source to GitHub Actions.
 3. Check Actions tab and ensure the workflow `Deploy GitHub Pages` succeeded.
-4. This repo also includes a root `index.html` redirect to `docs/` as a fallback.
+4. This repo includes root `index.html` and `404.html` redirects to `docs/` as fallback.
 
 ## Limitations
 
