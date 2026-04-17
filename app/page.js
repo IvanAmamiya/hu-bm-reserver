@@ -105,6 +105,7 @@ export default function HomePage() {
     }
 
     const selected = selectedSlots();
+    console.log("[导出] 获取选中时段:", selected, "总数:", selected.length);
     if (selected.length === 0) {
       setStatus("请至少勾选一个时段再导出");
       return;
@@ -114,6 +115,7 @@ export default function HomePage() {
     setStatus("正在导出 xlsx...");
 
     try {
+      console.log("[导出] 开始创建表单，场馆ID:", venueId, "名称:", selectedVenue?.name);
       const form = document.createElement("form");
       form.method = "POST";
       form.action = "/api/export-xlsx";
@@ -127,6 +129,14 @@ export default function HomePage() {
         applicantName: applicantName.trim(),
       };
 
+      console.log("[导出] 表单字段:", {
+        selectedCount: selected.length,
+        venueId: fields.venueId,
+        venueName: fields.venueName,
+        organizationName: fields.organizationName,
+        applicantName: fields.applicantName,
+      });
+
       Object.entries(fields).forEach(([key, value]) => {
         const input = document.createElement("input");
         input.type = "hidden";
@@ -135,14 +145,18 @@ export default function HomePage() {
         form.appendChild(input);
       });
 
+      console.log("[导出] 表单已创建，现在加入DOM并提交");
       document.body.appendChild(form);
+      console.log("[导出] form.submit() 即将调用");
       form.submit();
+      console.log("[导出] form.submit() 已调用");
       // Delay form removal to allow submission to complete
       window.setTimeout(() => {
         try {
+          console.log("[导出] 延迟500ms后移除表单DOM");
           form.remove();
-        } catch {
-          // Form may have already been removed by browser
+        } catch (e) {
+          console.log("[导出] 移除表单失败:", e.message);
         }
       }, 500);
 
