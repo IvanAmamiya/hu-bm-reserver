@@ -55,9 +55,9 @@ body {
 
 .hero-slogan {
   margin-top: 0;
-  padding: 10px 12px;
-  border-left: 4px solid var(--accent);
-  border-radius: 8px;
+  padding: 5px 6px;
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
   font-size: 0.76rem;
   font-weight: 400;
   color: #8f8c87;
