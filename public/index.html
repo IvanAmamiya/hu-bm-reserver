@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>空余时间选择与导出</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <h1>空余时间整理</h1>
+        <p>提取空余时间，勾选后导出到 Excel。</p>
+      </header>
+
+      <section class="panel">
+        <div class="controls">
+          <label>
+            团体名（或个人名）
+            <input id="organizationInput" type="text" placeholder="例如：篮球社 / 张三" />
+          </label>
+          <label>
+            申请者姓名
+            <input id="applicantInput" type="text" placeholder="例如：李四" />
+          </label>
+          <label>
+            体育馆
+            <select id="venueSelect"></select>
+          </label>
+          <label>
+            起始日期
+            <input id="dateInput" type="date" />
+          </label>
+          <label>
+            天数
+            <input id="daysInput" type="number" min="1" max="14" value="7" />
+          </label>
+          <button id="loadBtn" type="button">查询空余时间</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>可选时段</h2>
+          <button id="exportBtn" type="button" disabled>导出到 XLSX</button>
+        </div>
+        <div id="status" class="status"></div>
+        <div id="slots" class="slots"></div>
+      </section>
+    </main>
+
+    <script src="/config.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

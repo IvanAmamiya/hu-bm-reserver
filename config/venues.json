@@ -1,0 +1,16 @@
+[
+  {
+    "id": "gym-group-calendar",
+    "name": "东体育馆",
+    "embedUrls": [
+      "https://calendar.google.com/calendar/u/0/embed?src=cjf3gmhfu52jvshevng5ibslok@group.calendar.google.com&ctz=Asia/Tokyo"
+    ]
+  },
+  {
+    "id": "gym-sports-center",
+    "name": "西体育馆",
+    "embedUrls": [
+      "https://calendar.google.com/calendar/u/0/embed?src=hu.sportscenter@gmail.com&ctz=Asia/Tokyo&pli=1"
+    ]
+  }
+]
