@@ -17,7 +17,8 @@ Features:
 - Frontend config: `docs/config.js`
 - Export template: `docs/template.xlsx`
 
-`public/` keeps the same frontend for local static serving.
+`docs/` is the single deployment source for GitHub Pages.
+When changing behavior for production, edit `docs/*` first.
 
 ## Usage
 
@@ -83,6 +84,12 @@ git add .
 git commit -m "refactor: github pages ready"
 git push origin main
 ```
+
+After push:
+
+1. Open GitHub Actions and confirm `Deploy GitHub Pages` is green.
+2. Open repository Settings -> Pages and verify Source = GitHub Actions.
+3. Visit `https://<your-github-username>.github.io/<your-repo-name>/`.
 
 Open site URL pattern:
 
