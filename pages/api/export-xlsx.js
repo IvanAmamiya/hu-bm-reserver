@@ -1,12 +1,21 @@
 const { exportXlsxFromSelection, ORGANIZATION_NAME } = require("../../lib/scheduler");
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb",
+    },
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    const rawSelected = req.body?.selected;
+    const body = req.body || {};
+    const rawSelected = body.selected;
     let selected = Array.isArray(rawSelected) ? rawSelected : [];
     if (!Array.isArray(rawSelected) && typeof rawSelected === "string") {
       try {
@@ -19,9 +28,9 @@ export default async function handler(req, res) {
       }
     }
 
-    const venueName = String(req.body?.venueName || "").trim() || "Unknown Venue";
-    const organizationName = String(req.body?.organizationName || "").trim() || ORGANIZATION_NAME;
-    const applicantName = String(req.body?.applicantName || "").trim() || "";
+    const venueName = String(body.venueName || "").trim() || "Unknown Venue";
+    const organizationName = String(body.organizationName || "").trim() || ORGANIZATION_NAME;
+    const applicantName = String(body.applicantName || "").trim() || "";
 
     const { fileName, fileBuffer } = await exportXlsxFromSelection({
       selected,

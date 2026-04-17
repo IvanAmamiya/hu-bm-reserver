@@ -137,9 +137,16 @@ export default function HomePage() {
 
       document.body.appendChild(form);
       form.submit();
-      form.remove();
+      // Delay form removal to allow submission to complete
+      window.setTimeout(() => {
+        try {
+          form.remove();
+        } catch {
+          // Form may have already been removed by browser
+        }
+      }, 500);
 
-      setStatus("已提交导出请求，请查看浏览器下载列表。");
+      setStatus("已提交导出请求，请查看浏览器下载列表。若3秒内未见下载，请检查弹出窗口或下载文件夹。");
     } catch (error) {
       setStatus(`导出失败：${error.message}`);
     } finally {
