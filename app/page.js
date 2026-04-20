@@ -163,7 +163,22 @@ export default function HomePage() {
     }
   }
 
-  const selectableCount = slotsByDay.reduce((sum, day) => sum + (day.commonFree?.length || 0), 0);
+  // 检查时间段是否与教职员使用时间（12:00-13:00）重叠
+  function hasConflictWithStaffTime(slotStart, slotEnd) {
+    const timeToMinutes = (timeStr) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    };
+    
+    const staffStart = 12 * 60;  // 12:00
+    const staffEnd = 13 * 60;    // 13:00
+    const slotStartMin = timeToMinutes(slotStart);
+    const slotEndMin = timeToMinutes(slotEnd);
+    
+    return slotStartMin < staffEnd && slotEndMin > staffStart;
+  }
+
+  const selectableCount = slotsByDay.reduce((sum, day) => sum + (day.commonFree?.filter(slot => !hasConflictWithStaffTime(slot.start, slot.end)).length || 0), 0);
   const selectedCount = Object.values(checkedMap).filter(Boolean).length;
 
   return (
@@ -234,7 +249,9 @@ export default function HomePage() {
                 <div className="empty">无共同空余时间</div>
               ) : (
                 <div className="slot-list">
-                  {day.commonFree.map((slot, slotIndex) => {
+                  {day.commonFree
+                    .filter((slot) => !hasConflictWithStaffTime(slot.start, slot.end))
+                    .map((slot, slotIndex) => {
                     const value = JSON.stringify({ date: day.date, start: slot.start, end: slot.end });
                     return (
                       <label key={`${day.date}-${slotIndex}`} className="slot-item">
