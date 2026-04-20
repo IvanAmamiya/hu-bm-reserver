@@ -66,6 +66,27 @@ body {
   align-self: flex-start;
 }
 
+.notice {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(135deg, #fff9f3 0%, #fffaf5 100%);
+  border: 1px solid #f0d8c9;
+  border-left: 4px solid var(--accent);
+  font-size: 0.9rem;
+  color: #5a4a43;
+  line-height: 1.6;
+}
+
+.notice strong {
+  color: var(--accent);
+}
+
+.notice div {
+  margin-top: 4px;
+}
+
 .panel {
   margin-top: 18px;
   padding: 18px;

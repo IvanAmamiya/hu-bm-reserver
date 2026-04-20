@@ -191,6 +191,17 @@ export default function HomePage() {
         <p className="hero-slogan">大家都能安安静静地打球，不用涉足人际关系</p>
       </header>
 
+      <div className="notice">
+        <strong>※预约规则：</strong>
+        <div>利用の予約は申請日の1週間先から申請日の翌月末までの間の予約が可能です。</div>
+        <div style={{ fontSize: '0.85rem', marginTop: '6px', color: '#7a6d66' }}>
+          例）2024/4/1に申請する場合、4/8～5/31までの申込が可能。申請日から直近1週間は施設が空いていても予約できません。
+        </div>
+        <div style={{ fontSize: '0.85rem', marginTop: '6px', color: '#7a6d66' }}>
+          体育会所属団体は優先利用。別方法で予約調整を行います。
+        </div>
+      </div>
+
       <section className="panel">
         <div className="controls">
           <label>
