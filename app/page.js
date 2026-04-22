@@ -26,6 +26,13 @@ function latestBookableISO() {
   return toISODate(nextMonthEnd);
 }
 
+const HERO_SLOGANS = [
+  "安安静静打球，不搞人际关系",
+  "自由约球，权力不系一人之手！",
+  "闪闪发亮，心潮澎湃",
+  "释放多巴胺！",
+];
+
 export default function HomePage() {
   const [organizationName, setOrganizationName] = useState("");
   const [applicantName, setApplicantName] = useState("");
@@ -39,6 +46,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showPostExportGuide, setShowPostExportGuide] = useState(false);
+  const [sloganIndex, setSloganIndex] = useState(0);
 
   const selectedVenue = useMemo(() => venues.find((v) => v.id === venueId) || null, [venues, venueId]);
 
@@ -64,6 +72,14 @@ export default function HomePage() {
     }
 
     loadVenues();
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSloganIndex((prev) => (prev + 1) % HERO_SLOGANS.length);
+    }, 3200);
+
+    return () => window.clearInterval(timer);
   }, []);
 
   function toggleSlot(value) {
@@ -224,7 +240,7 @@ export default function HomePage() {
           <h1>空余时间整理</h1>
           <p>先选体育馆，再查看可选时段，最后导出到 XLSX。</p>
         </div>
-        <p className="hero-slogan">自由约球，权力不系一人之手！</p>
+        <p className="hero-slogan">{HERO_SLOGANS[sloganIndex]}</p>
       </header>
 
       <div className="notice">
