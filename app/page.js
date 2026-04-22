@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
 
 const ADVANCE_BOOKING_DAYS = Math.max(0, Number(process.env.NEXT_PUBLIC_ADVANCE_BOOKING_DAYS || 7));
 
@@ -26,89 +25,6 @@ function latestBookableISO() {
   return toISODate(nextMonthEnd);
 }
 
-function normalizeSlotKey(item) {
-  return `${String(item.date || "").trim()}|${String(item.start || "").trim()}|${String(item.end || "").trim()}`;
-}
-
-function parseDateCellToISO(cell) {
-  if (!cell) {
-    return null;
-  }
-
-  if (typeof cell.v === "number") {
-    const parsed = XLSX.SSF.parse_date_code(cell.v);
-    if (!parsed || !parsed.y || !parsed.m || !parsed.d) {
-      return null;
-    }
-    const y = String(parsed.y).padStart(4, "0");
-    const m = String(parsed.m).padStart(2, "0");
-    const d = String(parsed.d).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-
-  if (cell.v instanceof Date) {
-    return toISODate(cell.v);
-  }
-
-  if (typeof cell.v === "string") {
-    const text = cell.v.trim();
-    const m = text.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
-    if (m) {
-      return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
-    }
-  }
-
-  return null;
-}
-
-function extractEntriesFromWorkbook(workbook) {
-  const rangeRegex = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/g;
-  const map = new Map();
-
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet || !sheet["!ref"]) {
-      continue;
-    }
-
-    const range = XLSX.utils.decode_range(sheet["!ref"]);
-    for (let r = range.s.r; r <= range.e.r; r += 1) {
-      for (let c = range.s.c; c <= range.e.c; c += 1) {
-        const addr = XLSX.utils.encode_cell({ r, c });
-        const cell = sheet[addr];
-        const text = String(cell?.v || "");
-        if (!text.includes(":")) {
-          continue;
-        }
-
-        const dateCell = sheet[XLSX.utils.encode_cell({ r: Math.max(r - 1, 0), c })];
-        const date = parseDateCellToISO(dateCell);
-        if (!date) {
-          continue;
-        }
-
-        const matches = [...text.matchAll(rangeRegex)];
-        for (const hit of matches) {
-          const start = hit[1].padStart(5, "0");
-          const end = hit[2].padStart(5, "0");
-          const key = `${date}|${start}|${end}`;
-          if (!map.has(key)) {
-            map.set(key, {
-              date,
-              start,
-              end,
-              sheet: sheetName,
-              cell: addr,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  return [...map.values()].sort((a, b) => normalizeSlotKey(a).localeCompare(normalizeSlotKey(b)));
-}
-
 export default function HomePage() {
   const [organizationName, setOrganizationName] = useState("");
   const [applicantName, setApplicantName] = useState("");
@@ -121,9 +37,7 @@ export default function HomePage() {
   const [status, setStatus] = useState("正在加载体育馆列表...");
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [externalFileName, setExternalFileName] = useState("");
-  const [externalEntries, setExternalEntries] = useState([]);
-  const [mergeStatus, setMergeStatus] = useState("请上传外部表格（xlsx）以检测内容并对照当前勾选时段。");
+  const [submitting, setSubmitting] = useState(false);
 
   const selectedVenue = useMemo(() => venues.find((v) => v.id === venueId) || null, [venues, venueId]);
 
@@ -162,25 +76,6 @@ export default function HomePage() {
     return Object.keys(checkedMap)
       .filter((key) => checkedMap[key])
       .map((key) => JSON.parse(key));
-  }
-
-  async function handleExternalTableChange(event) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setExternalFileName(file.name);
-    try {
-      const bytes = await file.arrayBuffer();
-      const workbook = XLSX.read(bytes, { type: "array", cellDates: true });
-      const entries = extractEntriesFromWorkbook(workbook);
-      setExternalEntries(entries);
-      setMergeStatus(`已读取 ${file.name}：识别到 ${entries.length} 条可预约时段。`);
-    } catch (error) {
-      setExternalEntries([]);
-      setMergeStatus(`读取失败：${error.message}`);
-    }
   }
 
   async function handleLoadAvailability() {
@@ -300,6 +195,49 @@ export default function HomePage() {
     }
   }
 
+  async function handleSubmitApplication() {
+    const selected = selectedSlots().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (selected.length === 0) {
+      setStatus("请先勾选至少一个时段，再提交自动申请。");
+      return;
+    }
+
+    if (!organizationName.trim() && !applicantName.trim()) {
+      setStatus("请至少填写团体名或申请者姓名，再提交自动申请。");
+      return;
+    }
+
+    setSubmitting(true);
+    setStatus("正在通过 API 自动提交申请...");
+
+    try {
+      const response = await fetch("/api/submit-form", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          venueId,
+          venueName: selectedVenue?.name || "Unknown Venue",
+          organizationName: organizationName.trim(),
+          applicantName: applicantName.trim(),
+          selected,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || result.message || "自动提交失败");
+      }
+
+      setStatus(`自动提交成功：已推送 ${selected.length} 条时段。${result.requestId ? ` 请求ID：${result.requestId}` : ""}`);
+    } catch (error) {
+      setStatus(`自动提交失败：${error.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   // 检查时间段是否与教职员使用时间（12:00-13:00）重叠
   function hasConflictWithStaffTime(slotStart, slotEnd) {
     const timeToMinutes = (timeStr) => {
@@ -317,13 +255,6 @@ export default function HomePage() {
 
   const selectableCount = slotsByDay.reduce((sum, day) => sum + (day.commonFree?.filter(slot => !hasConflictWithStaffTime(slot.start, slot.end)).length || 0), 0);
   const selectedCount = Object.values(checkedMap).filter(Boolean).length;
-  const selectedEntries = useMemo(() => selectedSlots().sort((a, b) => normalizeSlotKey(a).localeCompare(normalizeSlotKey(b))), [checkedMap]);
-  const externalKeySet = useMemo(() => new Set(externalEntries.map((item) => normalizeSlotKey(item))), [externalEntries]);
-  const mergeRows = useMemo(
-    () => selectedEntries.map((item) => ({ ...item, matched: externalKeySet.has(normalizeSlotKey(item)) })),
-    [selectedEntries, externalKeySet]
-  );
-  const matchedCount = mergeRows.filter((row) => row.matched).length;
 
   return (
     <main className="container">
@@ -394,9 +325,14 @@ export default function HomePage() {
       <section className="panel">
         <div className="panel-head">
           <h2>可选时段</h2>
-          <button type="button" disabled={exporting || loading || selectedCount === 0} onClick={handleExport}>
-            导出到 XLSX{selectedCount > 0 ? `（已选 ${selectedCount}）` : ""}
-          </button>
+          <div className="panel-actions">
+            <button type="button" onClick={handleSubmitApplication} disabled={loading || exporting || submitting || selectedCount === 0}>
+              {submitting ? "自动提交中..." : "自动提交申请"}
+            </button>
+            <button type="button" disabled={exporting || loading || selectedCount === 0} onClick={handleExport}>
+              导出到 XLSX{selectedCount > 0 ? `（已选 ${selectedCount}）` : ""}
+            </button>
+          </div>
         </div>
         <div className="status">{status}</div>
         <div className="slots">
@@ -431,51 +367,6 @@ export default function HomePage() {
             </article>
           ))}
         </div>
-      </section>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h2>表格识别与融合预览</h2>
-        </div>
-        <div className="merge-tools">
-          <label className="file-picker">
-            外部表格（SharePoint导出的 xlsx）
-            <input type="file" accept=".xlsx,.xls" onChange={handleExternalTableChange} />
-          </label>
-        </div>
-        <div className="status">{mergeStatus}</div>
-        <div className="merge-summary">
-          <span>外部表格：{externalFileName || "未上传"}</span>
-          <span>外部识别时段：{externalEntries.length}</span>
-          <span>当前已勾选：{selectedEntries.length}</span>
-          <span>匹配成功：{matchedCount}</span>
-        </div>
-        {selectedEntries.length > 0 ? (
-          <div className="merge-table-wrap">
-            <table className="merge-table">
-              <thead>
-                <tr>
-                  <th>日期</th>
-                  <th>时间段</th>
-                  <th>外部表格中是否存在</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mergeRows.map((row, idx) => (
-                  <tr key={`${normalizeSlotKey(row)}-${idx}`}>
-                    <td>{row.date}</td>
-                    <td>{row.start}-{row.end}</td>
-                    <td>
-                      <span className={row.matched ? "tag-ok" : "tag-miss"}>{row.matched ? "已匹配" : "未匹配"}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="empty">请先在上方勾选时段，再进行融合对照。</div>
-        )}
       </section>
     </main>
   );

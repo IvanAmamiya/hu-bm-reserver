@@ -56,6 +56,7 @@ npm run dev
 - `GET /api/venues`
 - `GET /api/availability?venueId=<id>&date=YYYY-MM-DD&days=1`
 - `POST /api/export-xlsx`
+- `POST /api/submit-form`
 
 Export request body:
 
@@ -70,6 +71,25 @@ Export request body:
   ]
 }
 ```
+
+Auto submit request body (`/api/submit-form`):
+
+```json
+{
+  "venueId": "gym-group-calendar",
+  "venueName": "东体育馆",
+  "organizationName": "团体名（或个人名）",
+  "applicantName": "申请者姓名",
+  "selected": [
+    { "date": "2026-04-20", "start": "09:00", "end": "12:00" }
+  ]
+}
+```
+
+Environment setup for auto submit:
+
+- `FORM_SUBMIT_WEBHOOK_URL`: your Power Automate / webhook endpoint
+- `FORM_SUBMIT_WEBHOOK_TOKEN`: optional bearer token
 
 ## Deploy Notes
 
