@@ -90,6 +90,61 @@ Environment setup for auto submit:
 
 - `FORM_SUBMIT_WEBHOOK_URL`: your Power Automate / webhook endpoint
 - `FORM_SUBMIT_WEBHOOK_TOKEN`: optional bearer token
+- `FORM_SUBMIT_ATTACH_XLSX`: default `true`, attach generated Excel as Base64 in payload
+
+Power Automate (Option 2) quick setup:
+
+1. Create flow trigger: `When an HTTP request is received`
+2. Use this schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "requestId": { "type": "string" },
+    "submittedAt": { "type": "string" },
+    "source": { "type": "string" },
+    "venue": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      }
+    },
+    "applicant": {
+      "type": "object",
+      "properties": {
+        "organizationName": { "type": "string" },
+        "applicantName": { "type": "string" }
+      }
+    },
+    "selected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string" },
+          "start": { "type": "string" },
+          "end": { "type": "string" }
+        }
+      }
+    },
+    "selectedCount": { "type": "integer" },
+    "attachment": {
+      "type": ["object", "null"],
+      "properties": {
+        "fileName": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "base64": { "type": "string" }
+      }
+    }
+  }
+}
+```
+
+3. Add action: `Create file` (SharePoint or OneDrive)
+4. Set file name: `attachment.fileName`
+5. Set file content: `base64ToBinary(triggerBody()?['attachment']?['base64'])`
 
 ## Deploy Notes
 

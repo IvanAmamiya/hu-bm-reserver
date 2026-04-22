@@ -1,7 +1,12 @@
 import crypto from "crypto";
 
+const { exportXlsxFromSelection } = require("../../lib/scheduler");
+
 const FORM_SUBMIT_WEBHOOK_URL = process.env.FORM_SUBMIT_WEBHOOK_URL || "";
 const FORM_SUBMIT_WEBHOOK_TOKEN = process.env.FORM_SUBMIT_WEBHOOK_TOKEN || "";
+const FORM_SUBMIT_ATTACH_XLSX = !["0", "false", "no"].includes(
+  String(process.env.FORM_SUBMIT_ATTACH_XLSX || "true").toLowerCase()
+);
 
 function normalizeSelected(rawSelected) {
   if (!Array.isArray(rawSelected)) {
@@ -50,6 +55,23 @@ export default async function handler(req, res) {
     }
 
     const requestId = crypto.randomUUID();
+    let attachment = null;
+
+    if (FORM_SUBMIT_ATTACH_XLSX) {
+      const { fileName, fileBuffer } = await exportXlsxFromSelection({
+        selected,
+        venueName,
+        organizationName,
+        applicantName,
+      });
+
+      attachment = {
+        fileName,
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        base64: fileBuffer.toString("base64"),
+      };
+    }
+
     const payload = {
       requestId,
       submittedAt: new Date().toISOString(),
@@ -64,6 +86,7 @@ export default async function handler(req, res) {
       },
       selected,
       selectedCount: selected.length,
+      attachment,
     };
 
     const headers = {
@@ -92,6 +115,8 @@ export default async function handler(req, res) {
       ok: true,
       requestId,
       selectedCount: selected.length,
+      attachedXlsx: Boolean(attachment),
+      fileName: attachment?.fileName || null,
     });
   } catch (error) {
     return res.status(500).json({
