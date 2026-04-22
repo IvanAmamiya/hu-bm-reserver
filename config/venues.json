@@ -1,7 +1,7 @@
 [
   {
     "id": "gym-group-calendar",
-    "name": "东体育馆",
+    "name": "東体育馆",
     "embedUrls": [
       "https://calendar.google.com/calendar/u/0/embed?src=cjf3gmhfu52jvshevng5ibslok@group.calendar.google.com&ctz=Asia/Tokyo"
     ]
@@ -16,71 +16,66 @@
   {
     "id": "north-ground",
     "name": "北グラウンド",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=j3rn3uscr0f0hagvoaep7a33o0@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "west-ground",
     "name": "西グラウンド",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=u0b01o5cvg3epp4oc8ogboe8a8@group.calendar.google.com&ctz=Asia/Tokyo"]
+  },
+  {
+    "id": "south-ground",
+    "name": "南グラウンド",
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=tas6gqm46djg6qjushcr5186pk@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "north-gym-1f-arena",
     "name": "北体育館1Fアリーナ",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=c3pdb6ruf18gc47tlebspqtgso@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "north-gym-3f-arena",
     "name": "北体育館3Fアリーナ",
-    "embedUrls": []
-  },
-  {
-    "id": "east-gym",
-    "name": "東体育館",
-    "embedUrls": []
-  },
-  {
-    "id": "west-gym-arena",
-    "name": "西体育館アリーナ",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=pfau15b1897p6oo7ln0eud1520@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "kendo-hall",
     "name": "剣道場",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=a24ps9h9mm34irp0u9tu61h6l4@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "judo-hall",
     "name": "柔道場",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=pu6a1noe7qvde7q05eb40gaq5c@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "west-gym-meeting-room",
     "name": "西体育館ミーティングルーム",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=3f6l3dkkgevimevuchfeg9sea0@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "tennis-court-3",
     "name": "第3テニスコート",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=cq9b2uab8d1d3lb1dq1250r66g@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "tennis-court-4",
     "name": "第4テニスコート",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=k18tcuhpe481d2cpm8gnlgk5c4@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "tennis-court-5",
     "name": "第5テニスコート",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=onf311t0qf47pc48oontr14n94@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "track-and-field",
     "name": "陸上競技場",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=172r76of52rgj0oh7ad70vdhqo@group.calendar.google.com&ctz=Asia/Tokyo"]
   },
   {
     "id": "training-room",
     "name": "トレーニングルーム",
-    "embedUrls": []
+    "embedUrls": ["https://calendar.google.com/calendar/u/0/embed?src=ek1r685m2v0f0igmiae04t544g@group.calendar.google.com&ctz=Asia/Tokyo"]
   }
 ]
