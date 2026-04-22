@@ -262,7 +262,10 @@ export default function HomePage() {
     return slotStartMin < staffEnd && slotEndMin > staffStart;
   }
 
-  const selectableCount = slotsByDay.reduce((sum, day) => sum + (day.commonFree?.filter(slot => !hasConflictWithStaffTime(slot.start, slot.end)).length || 0), 0);
+  const selectableCount = slotsByDay.reduce(
+    (sum, day) => sum + (day.isHoliday ? 0 : (day.commonFree?.filter((slot) => !hasConflictWithStaffTime(slot.start, slot.end)).length || 0)),
+    0
+  );
   const selectedCount = Object.values(checkedMap).filter(Boolean).length;
   const bookingsByMonth = useMemo(() => {
     const monthMap = new Map();
@@ -410,7 +413,9 @@ export default function HomePage() {
                   <div className="day-title">
                     {day.date} ({day.window?.start}-{day.window?.end})
                   </div>
-                  {!day.commonFree || day.commonFree.length === 0 ? (
+                  {day.isHoliday ? (
+                    <div className="empty">祝日不可预约{day.holidayNames?.length ? `（${day.holidayNames.join(" / ")}）` : ""}</div>
+                  ) : !day.commonFree || day.commonFree.length === 0 ? (
                     <div className="empty">无共同空余时间</div>
                   ) : (
                     <div className="slot-list">
