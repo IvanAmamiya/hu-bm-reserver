@@ -238,7 +238,7 @@ export default function HomePage() {
       <header className="hero">
         <div className="hero-copy">
           <h1>空余时间整理</h1>
-          <p>先选体育馆，再查看可选时段，最后导出到 XLSX。</p>
+          <p>先选体育馆，再查看可选时段，最后导出到 XLSX，然后填写预约表单</p>
         </div>
         <p className="hero-slogan">{HERO_SLOGANS[sloganIndex]}</p>
       </header>
