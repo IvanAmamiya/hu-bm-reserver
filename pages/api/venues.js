@@ -6,6 +6,7 @@ export default function handler(req, res) {
       id: venue.id,
       name: venue.name,
       calendarsCount: venue.embedUrls.length,
+      ready: venue.embedUrls.length > 0,
     }));
 
     res.status(200).json({ venues });

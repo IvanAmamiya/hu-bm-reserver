@@ -12,5 +12,75 @@
     "embedUrls": [
       "https://calendar.google.com/calendar/u/0/embed?src=hu.sportscenter@gmail.com&ctz=Asia/Tokyo&pli=1"
     ]
+  },
+  {
+    "id": "north-ground",
+    "name": "北グラウンド",
+    "embedUrls": []
+  },
+  {
+    "id": "west-ground",
+    "name": "西グラウンド",
+    "embedUrls": []
+  },
+  {
+    "id": "north-gym-1f-arena",
+    "name": "北体育館1Fアリーナ",
+    "embedUrls": []
+  },
+  {
+    "id": "north-gym-3f-arena",
+    "name": "北体育館3Fアリーナ",
+    "embedUrls": []
+  },
+  {
+    "id": "east-gym",
+    "name": "東体育館",
+    "embedUrls": []
+  },
+  {
+    "id": "west-gym-arena",
+    "name": "西体育館アリーナ",
+    "embedUrls": []
+  },
+  {
+    "id": "kendo-hall",
+    "name": "剣道場",
+    "embedUrls": []
+  },
+  {
+    "id": "judo-hall",
+    "name": "柔道場",
+    "embedUrls": []
+  },
+  {
+    "id": "west-gym-meeting-room",
+    "name": "西体育館ミーティングルーム",
+    "embedUrls": []
+  },
+  {
+    "id": "tennis-court-3",
+    "name": "第3テニスコート",
+    "embedUrls": []
+  },
+  {
+    "id": "tennis-court-4",
+    "name": "第4テニスコート",
+    "embedUrls": []
+  },
+  {
+    "id": "tennis-court-5",
+    "name": "第5テニスコート",
+    "embedUrls": []
+  },
+  {
+    "id": "track-and-field",
+    "name": "陸上競技場",
+    "embedUrls": []
+  },
+  {
+    "id": "training-room",
+    "name": "トレーニングルーム",
+    "embedUrls": []
   }
 ]

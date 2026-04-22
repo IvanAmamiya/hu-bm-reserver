@@ -52,7 +52,8 @@ export default function HomePage() {
         const list = Array.isArray(data.venues) ? data.venues : [];
         setVenues(list);
         if (list.length > 0) {
-          setVenueId(list[0].id);
+          const firstReady = list.find((item) => item.ready);
+          setVenueId((firstReady || list[0]).id);
         }
         setStatus("请选择日期并查询空余时间");
       } catch (error) {
@@ -79,6 +80,11 @@ export default function HomePage() {
   async function handleLoadAvailability() {
     if (!venueId) {
       setStatus("请先选择体育馆");
+      return;
+    }
+
+    if (selectedVenue && !selectedVenue.ready) {
+      setStatus(`设施“${selectedVenue.name}”尚未配置日历源，暂时无法查询。请在 config/venues.json 中补充 embedUrls。`);
       return;
     }
 
@@ -242,7 +248,7 @@ export default function HomePage() {
             <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
               {venues.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.name}
+                  {v.name}{v.ready ? "" : "（未配置）"}
                 </option>
               ))}
             </select>
