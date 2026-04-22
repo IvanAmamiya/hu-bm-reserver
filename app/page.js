@@ -2,8 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+const ADVANCE_BOOKING_DAYS = Math.max(0, Number(process.env.NEXT_PUBLIC_ADVANCE_BOOKING_DAYS || 7));
+
+function toISODate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function earliestBookableISO() {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  now.setDate(now.getDate() + ADVANCE_BOOKING_DAYS);
+  return toISODate(now);
+}
+
+function latestBookableISO() {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+  return toISODate(nextMonthEnd);
 }
 
 export default function HomePage() {
@@ -11,7 +27,7 @@ export default function HomePage() {
   const [applicantName, setApplicantName] = useState("");
   const [venues, setVenues] = useState([]);
   const [venueId, setVenueId] = useState("");
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState(earliestBookableISO());
   const [days, setDays] = useState(7);
   const [slotsByDay, setSlotsByDay] = useState([]);
   const [checkedMap, setCheckedMap] = useState({});
@@ -74,7 +90,7 @@ export default function HomePage() {
 
     try {
       const response = await fetch(
-        `/api/availability?venueId=${encodeURIComponent(venueId)}&date=${encodeURIComponent(date)}&days=${Math.max(1, Math.min(14, Number(days || 1)))}`
+        `/api/availability?venueId=${encodeURIComponent(venueId)}&date=${encodeURIComponent(date)}&days=${Math.max(1, Number(days || 1))}`
       );
       if (!response.ok) {
         const errorData = await response.json();
@@ -84,7 +100,13 @@ export default function HomePage() {
       const data = await response.json();
       const entries = Array.isArray(data.data) ? data.data : [];
       setSlotsByDay(entries);
-      setStatus(`查询完成：${data.venue?.name || "体育馆"}，共 ${entries.length} 天，勾选后可导出`);
+      const requestedDays = Number(data?.range?.requestedDays || days);
+      const appliedDays = Number(data?.range?.appliedDays || entries.length);
+      if (appliedDays < requestedDays) {
+        setStatus(`查询完成：${data.venue?.name || "体育馆"}，申请了 ${requestedDays} 天，按预约规则可查询 ${appliedDays} 天（到 ${data?.range?.endDate || "规则上限"} 为止）`);
+      } else {
+        setStatus(`查询完成：${data.venue?.name || "体育馆"}，共 ${entries.length} 天，勾选后可导出`);
+      }
     } catch (error) {
       setSlotsByDay([]);
       setStatus(`查询失败：${error.message}`);
@@ -224,14 +246,19 @@ export default function HomePage() {
           </label>
           <label>
             起始日期
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input
+              type="date"
+              min={earliestBookableISO()}
+              max={latestBookableISO()}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
           </label>
           <label>
             天数
             <input
               type="number"
               min="1"
-              max="14"
               value={days}
               onChange={(e) => setDays(Number(e.target.value || 1))}
             />
