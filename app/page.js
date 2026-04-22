@@ -264,7 +264,7 @@ export default function HomePage() {
             申请者姓名
             <input value={applicantName} onChange={(e) => setApplicantName(e.target.value)} placeholder="例如：李四" />
           </label>
-          <label>
+          <label className="control-venue">
             体育馆
             <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
               {venues.map((v) => (

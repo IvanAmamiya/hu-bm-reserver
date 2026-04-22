@@ -103,6 +103,10 @@ body {
   align-items: end;
 }
 
+.control-venue {
+  grid-column: span 2;
+}
+
 label {
   display: grid;
   gap: 6px;
@@ -261,6 +265,10 @@ button:disabled {
   .controls {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .control-venue {
+    grid-column: auto;
   }
 
   button {
