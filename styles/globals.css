@@ -155,6 +155,73 @@ button:disabled {
   color: #6b615b;
 }
 
+.tab-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.tab-row.sub {
+  margin-top: -4px;
+}
+
+.tab-btn {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #d8c7ba;
+  background: #f7eee7;
+  color: #6a5548;
+  font-size: 0.88rem;
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.board-venue-list {
+  display: grid;
+  gap: 8px;
+}
+
+.board-venue-item {
+  border: 1px solid #e5d4c7;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fffdfa;
+}
+
+.board-venue-name {
+  font-weight: 700;
+  color: #5c4b3f;
+  margin-bottom: 6px;
+}
+
+.board-bookings {
+  display: grid;
+  gap: 6px;
+}
+
+.board-booking-item {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f9f2eb;
+  border: 1px solid #eddacb;
+}
+
+.board-booking-item strong {
+  color: #7a4022;
+}
+
+.board-booking-item span {
+  color: #624f42;
+  font-size: 0.88rem;
+}
+
 .next-step-guide {
   margin: -4px 0 12px;
   padding: 10px 12px;

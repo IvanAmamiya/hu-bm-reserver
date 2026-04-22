@@ -47,6 +47,11 @@ export default function HomePage() {
   const [exporting, setExporting] = useState(false);
   const [showPostExportGuide, setShowPostExportGuide] = useState(false);
   const [sloganIndex, setSloganIndex] = useState(0);
+  const [activeMainTab, setActiveMainTab] = useState("free");
+  const [bookingsViewTab, setBookingsViewTab] = useState("day");
+  const [bookingsByDay, setBookingsByDay] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsStatus, setBookingsStatus] = useState("请先点击“查询空余时间”加载预约看板。");
 
   const selectedVenue = useMemo(() => venues.find((v) => v.id === venueId) || null, [venues, venueId]);
 
@@ -95,6 +100,32 @@ export default function HomePage() {
       .map((key) => JSON.parse(key));
   }
 
+  async function loadBookingsBoard(queryDate, queryDays) {
+    setBookingsLoading(true);
+    setBookingsStatus("正在加载预约看板...");
+
+    try {
+      const response = await fetch(
+        `/api/bookings?date=${encodeURIComponent(queryDate)}&days=${Math.max(1, Number(queryDays || 1))}`
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "加载预约看板失败");
+      }
+
+      const data = await response.json();
+      const entries = Array.isArray(data.data) ? data.data : [];
+      setBookingsByDay(entries);
+      const appliedDays = Number(data?.range?.appliedDays || entries.length);
+      setBookingsStatus(`预约看板已加载，共 ${appliedDays} 天。可切换按天/按月查看各体育馆占用情况。`);
+    } catch (error) {
+      setBookingsByDay([]);
+      setBookingsStatus(`预约看板加载失败：${error.message}`);
+    } finally {
+      setBookingsLoading(false);
+    }
+  }
+
   async function handleLoadAvailability() {
     if (!venueId) {
       setStatus("请先选择体育馆");
@@ -128,6 +159,7 @@ export default function HomePage() {
       const data = await response.json();
       const entries = Array.isArray(data.data) ? data.data : [];
       setSlotsByDay(entries);
+      loadBookingsBoard(date, days);
       const requestedDays = Number(data?.range?.requestedDays || days);
       const appliedDays = Number(data?.range?.appliedDays || entries.length);
       if (appliedDays < requestedDays) {
@@ -232,6 +264,38 @@ export default function HomePage() {
 
   const selectableCount = slotsByDay.reduce((sum, day) => sum + (day.commonFree?.filter(slot => !hasConflictWithStaffTime(slot.start, slot.end)).length || 0), 0);
   const selectedCount = Object.values(checkedMap).filter(Boolean).length;
+  const bookingsByMonth = useMemo(() => {
+    const monthMap = new Map();
+    for (const day of bookingsByDay) {
+      const monthKey = String(day.date || "").slice(0, 7);
+      if (!monthMap.has(monthKey)) {
+        monthMap.set(monthKey, new Map());
+      }
+      const venueMap = monthMap.get(monthKey);
+      for (const venue of day.venues || []) {
+        if (!venueMap.has(venue.id)) {
+          venueMap.set(venue.id, {
+            id: venue.id,
+            name: venue.name,
+            ready: venue.ready !== false,
+            entries: [],
+          });
+        }
+        const target = venueMap.get(venue.id);
+        const bookings = Array.isArray(venue.bookings) ? venue.bookings : [];
+        if (bookings.length > 0) {
+          target.entries.push({ date: day.date, bookings });
+        }
+      }
+    }
+
+    return [...monthMap.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([month, venueMap]) => ({
+        month,
+        venues: [...venueMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
+      }));
+  }, [bookingsByDay]);
 
   return (
     <main className="container">
@@ -301,13 +365,34 @@ export default function HomePage() {
 
       <section className="panel">
         <div className="panel-head">
-          <h2>可选时段</h2>
-          <button type="button" disabled={exporting || loading || selectedCount === 0} onClick={handleExport}>
-            导出到 XLSX{selectedCount > 0 ? `（已选 ${selectedCount}）` : ""}
+          <h2>{activeMainTab === "free" ? "可选时段" : "预约看板"}</h2>
+          {activeMainTab === "free" ? (
+            <button type="button" disabled={exporting || loading || selectedCount === 0} onClick={handleExport}>
+              导出到 XLSX{selectedCount > 0 ? `（已选 ${selectedCount}）` : ""}
+            </button>
+          ) : null}
+        </div>
+        <div className="tab-row">
+          <button
+            type="button"
+            className={`tab-btn ${activeMainTab === "free" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("free")}
+          >
+            可选时段
+          </button>
+          <button
+            type="button"
+            className={`tab-btn ${activeMainTab === "board" ? "active" : ""}`}
+            onClick={() => setActiveMainTab("board")}
+          >
+            预约看板
           </button>
         </div>
-        <div className="status">{status}</div>
-        {showPostExportGuide ? (
+
+        {activeMainTab === "free" ? (
+          <>
+            <div className="status">{status}</div>
+            {showPostExportGuide ? (
           <div className="next-step-guide">
             <strong>下一步：</strong>
             <div>
@@ -318,39 +403,131 @@ export default function HomePage() {
               （体育场馆预约表单），并上传你刚下载的 Excel 文件后再提交。
             </div>
           </div>
-        ) : null}
-        <div className="slots">
-          {slotsByDay.map((day, dayIndex) => (
-            <article key={`${day.date}-${dayIndex}`} className="day-card">
-              <div className="day-title">
-                {day.date} ({day.window?.start}-{day.window?.end})
+            ) : null}
+            <div className="slots">
+              {slotsByDay.map((day, dayIndex) => (
+                <article key={`${day.date}-${dayIndex}`} className="day-card">
+                  <div className="day-title">
+                    {day.date} ({day.window?.start}-{day.window?.end})
+                  </div>
+                  {!day.commonFree || day.commonFree.length === 0 ? (
+                    <div className="empty">无共同空余时间</div>
+                  ) : (
+                    <div className="slot-list">
+                      {day.commonFree
+                        .filter((slot) => !hasConflictWithStaffTime(slot.start, slot.end))
+                        .map((slot, slotIndex) => {
+                          const value = JSON.stringify({ date: day.date, start: slot.start, end: slot.end });
+                          return (
+                            <label key={`${day.date}-${slotIndex}`} className="slot-item">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(checkedMap[value])}
+                                onChange={() => toggleSlot(value)}
+                              />
+                              <span>
+                                {slot.start}-{slot.end}
+                              </span>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="status">{bookingsStatus}</div>
+            <div className="tab-row sub">
+              <button
+                type="button"
+                className={`tab-btn ${bookingsViewTab === "day" ? "active" : ""}`}
+                onClick={() => setBookingsViewTab("day")}
+              >
+                按天
+              </button>
+              <button
+                type="button"
+                className={`tab-btn ${bookingsViewTab === "month" ? "active" : ""}`}
+                onClick={() => setBookingsViewTab("month")}
+              >
+                按月
+              </button>
+            </div>
+
+            {bookingsLoading ? <div className="empty">预约看板加载中...</div> : null}
+
+            {!bookingsLoading && bookingsViewTab === "day" ? (
+              <div className="slots">
+                {bookingsByDay.map((day) => (
+                  <article key={day.date} className="day-card">
+                    <div className="day-title">{day.date}</div>
+                    <div className="board-venue-list">
+                      {(day.venues || []).map((venue) => (
+                        <div key={`${day.date}-${venue.id}`} className="board-venue-item">
+                          <div className="board-venue-name">
+                            {venue.name}
+                            {venue.ready === false ? "（未配置）" : ""}
+                          </div>
+                          {venue.ready === false ? (
+                            <div className="empty">未配置日历</div>
+                          ) : !venue.bookings || venue.bookings.length === 0 ? (
+                            <div className="empty">当日无预约</div>
+                          ) : (
+                            <div className="board-bookings">
+                              {venue.bookings.map((booking, idx) => (
+                                <div key={`${day.date}-${venue.id}-${idx}`} className="board-booking-item">
+                                  <strong>{booking.start}-{booking.end}</strong>
+                                  <span>{booking.summary}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
               </div>
-              {!day.commonFree || day.commonFree.length === 0 ? (
-                <div className="empty">无共同空余时间</div>
-              ) : (
-                <div className="slot-list">
-                  {day.commonFree
-                    .filter((slot) => !hasConflictWithStaffTime(slot.start, slot.end))
-                    .map((slot, slotIndex) => {
-                    const value = JSON.stringify({ date: day.date, start: slot.start, end: slot.end });
-                    return (
-                      <label key={`${day.date}-${slotIndex}`} className="slot-item">
-                        <input
-                          type="checkbox"
-                          checked={Boolean(checkedMap[value])}
-                          onChange={() => toggleSlot(value)}
-                        />
-                        <span>
-                          {slot.start}-{slot.end}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </article>
-          ))}
-        </div>
+            ) : null}
+
+            {!bookingsLoading && bookingsViewTab === "month" ? (
+              <div className="slots">
+                {bookingsByMonth.map((monthItem) => (
+                  <article key={monthItem.month} className="day-card">
+                    <div className="day-title">{monthItem.month}</div>
+                    <div className="board-venue-list">
+                      {monthItem.venues.map((venue) => (
+                        <div key={`${monthItem.month}-${venue.id}`} className="board-venue-item">
+                          <div className="board-venue-name">
+                            {venue.name}
+                            {venue.ready === false ? "（未配置）" : ""}
+                          </div>
+                          {venue.ready === false ? (
+                            <div className="empty">未配置日历</div>
+                          ) : venue.entries.length === 0 ? (
+                            <div className="empty">本月暂无预约</div>
+                          ) : (
+                            <div className="board-bookings">
+                              {venue.entries.map((entry) => (
+                                <div key={`${monthItem.month}-${venue.id}-${entry.date}`} className="board-booking-item">
+                                  <strong>{entry.date}</strong>
+                                  <span>{entry.bookings.map((booking) => `${booking.start}-${booking.end} ${booking.summary}`).join(" / ")}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </>
+        )}
       </section>
     </main>
   );

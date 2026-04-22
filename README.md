@@ -55,6 +55,7 @@ npm run dev
 - `GET /api/health`
 - `GET /api/venues`
 - `GET /api/availability?venueId=<id>&date=YYYY-MM-DD&days=1`
+- `GET /api/bookings?date=YYYY-MM-DD&days=7`
 - `POST /api/export-xlsx`
 - `POST /api/submit-form`
 
