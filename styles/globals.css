@@ -145,16 +145,26 @@ button:disabled {
   gap: 12px;
 }
 
-.panel-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .status {
   margin: 10px 0 14px;
   min-height: 22px;
   color: #6b615b;
+}
+
+.next-step-guide {
+  margin: -4px 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d9c8bb;
+  background: #fff8f2;
+  color: #5e4d42;
+  line-height: 1.5;
+}
+
+.next-step-guide a {
+  margin: 0 4px;
+  color: #8b431c;
+  font-weight: 600;
 }
 
 .download-fallback {
@@ -246,10 +256,6 @@ button:disabled {
   .panel-head {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .panel-actions {
-    width: 100%;
   }
 
   .controls {

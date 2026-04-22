@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const ADVANCE_BOOKING_DAYS = Math.max(0, Number(process.env.NEXT_PUBLIC_ADVANCE_BOOKING_DAYS || 7));
+const FORM_URL = "https://forms.office.com/r/0fQ6dvkcDm";
 
 function toISODate(date) {
   const year = date.getFullYear();
@@ -37,7 +38,7 @@ export default function HomePage() {
   const [status, setStatus] = useState("正在加载体育馆列表...");
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [showPostExportGuide, setShowPostExportGuide] = useState(false);
 
   const selectedVenue = useMemo(() => venues.find((v) => v.id === venueId) || null, [venues, venueId]);
 
@@ -97,6 +98,7 @@ export default function HomePage() {
     setLoading(true);
     setStatus(`正在查询 ${selectedVenue?.name || "体育馆"} 空余时间...`);
     setCheckedMap({});
+    setShowPostExportGuide(false);
 
     try {
       const response = await fetch(
@@ -140,6 +142,7 @@ export default function HomePage() {
 
     setExporting(true);
     setStatus("正在导出 xlsx...");
+    setShowPostExportGuide(false);
 
     try {
       console.log("[导出] 开始创建表单，场馆ID:", venueId, "名称:", selectedVenue?.name);
@@ -187,54 +190,12 @@ export default function HomePage() {
         }
       }, 500);
 
-      setStatus("已提交导出请求，请查看浏览器下载列表。若3秒内未见下载，请检查弹出窗口或下载文件夹。");
+      setStatus("已提交导出请求，请查看浏览器下载列表。下载完成后请按下方“下一步”指引提交预约表单。");
+      setShowPostExportGuide(true);
     } catch (error) {
       setStatus(`导出失败：${error.message}`);
     } finally {
       setExporting(false);
-    }
-  }
-
-  async function handleSubmitApplication() {
-    const selected = selectedSlots().sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    if (selected.length === 0) {
-      setStatus("请先勾选至少一个时段，再提交自动申请。");
-      return;
-    }
-
-    if (!organizationName.trim() && !applicantName.trim()) {
-      setStatus("请至少填写团体名或申请者姓名，再提交自动申请。");
-      return;
-    }
-
-    setSubmitting(true);
-    setStatus("正在通过 API 自动提交申请...");
-
-    try {
-      const response = await fetch("/api/submit-form", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          venueId,
-          venueName: selectedVenue?.name || "Unknown Venue",
-          organizationName: organizationName.trim(),
-          applicantName: applicantName.trim(),
-          selected,
-        }),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || result.message || "自动提交失败");
-      }
-
-      setStatus(`自动提交成功：已推送 ${selected.length} 条时段。${result.requestId ? ` 请求ID：${result.requestId}` : ""}`);
-    } catch (error) {
-      setStatus(`自动提交失败：${error.message}`);
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -325,16 +286,23 @@ export default function HomePage() {
       <section className="panel">
         <div className="panel-head">
           <h2>可选时段</h2>
-          <div className="panel-actions">
-            <button type="button" onClick={handleSubmitApplication} disabled={loading || exporting || submitting || selectedCount === 0}>
-              {submitting ? "自动提交中..." : "自动提交申请"}
-            </button>
-            <button type="button" disabled={exporting || loading || selectedCount === 0} onClick={handleExport}>
-              导出到 XLSX{selectedCount > 0 ? `（已选 ${selectedCount}）` : ""}
-            </button>
-          </div>
+          <button type="button" disabled={exporting || loading || selectedCount === 0} onClick={handleExport}>
+            导出到 XLSX{selectedCount > 0 ? `（已选 ${selectedCount}）` : ""}
+          </button>
         </div>
         <div className="status">{status}</div>
+        {showPostExportGuide ? (
+          <div className="next-step-guide">
+            <strong>下一步：</strong>
+            <div>
+              请打开
+              <a href={FORM_URL} target="_blank" rel="noopener noreferrer">
+                https://forms.office.com/r/0fQ6dvkcDm
+              </a>
+              （体育场馆预约表单），并上传你刚下载的 Excel 文件后再提交。
+            </div>
+          </div>
+        ) : null}
         <div className="slots">
           {slotsByDay.map((day, dayIndex) => (
             <article key={`${day.date}-${dayIndex}`} className="day-card">
