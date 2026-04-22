@@ -533,12 +533,12 @@ app.post("/api/export-xlsx", async (req, res) => {
   try {
     const selected = Array.isArray(req.body?.selected) ? req.body.selected : [];
     const venueName = String(req.body?.venueName || "").trim() || "Unknown Venue";
-    const organizationName = String(req.body?.organizationName || "").trim() || ORGANIZATION_NAME;
-    const applicantName = String(req.body?.applicantName || "").trim() || "";
+    const organizationName = String(req.body?.organizationName || "").trim();
+    const applicantName = String(req.body?.applicantName || "").trim();
 
-    if (!applicantName) {
+    if (!organizationName && !applicantName) {
       return res.status(400).json({
-        error: "Missing applicantName. Please input applicant name.",
+        error: "Missing organizationName/applicantName. Please input at least one.",
       });
     }
 
@@ -556,7 +556,13 @@ app.post("/api/export-xlsx", async (req, res) => {
     }
 
     const workbook = XLSX.readFile(TEMPLATE_FILE, { cellStyles: true });
-    const fillResult = fillTemplateSheet2(workbook, selected, venueName, organizationName, applicantName);
+    const fillResult = fillTemplateSheet2(
+      workbook,
+      selected,
+      venueName,
+      organizationName || ORGANIZATION_NAME,
+      applicantName
+    );
 
     const fileName = xlsxFileName(organizationName, venueName);
     const fileBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
